@@ -44,59 +44,47 @@ Two things worth knowing before you pick numbers:
 ---
 ## 1.
 
-<!-- Your criterion. It must name a number. -->
-
-
+On a test set of at least 100 pieces known to be human-written, no more than 1 piece (1%) may receive the AI label in each of the three runs.
 
 **Why this target:**
-
+An AI label can unfairly harm a real writer, so I would rather miss some AI-written text than falsely accuse more than 1 in 100 human writers. The minimum sample size makes the 1% target measurable; I will count only the AI label as a false positive, not the uncertain label.
 
 
 ---
 
 ## 2.
-
-<!-- Your criterion. -->
-
-
+For each of three runs, at least 8 of 10 clearly human-written examples must score at or below 0.35, and at least 8 of 10 clearly AI-written examples must score at or above 0.65.
 
 **Why this target:**
-
+The 0–1 score should leave a visible gap between clear examples instead of forcing a confident label when the signals overlap. The 0.35 and 0.65 cutoffs leave a middle band for uncertain cases; requiring 8 of 10 in each class allows some difficult examples without hiding poor separation.
 
 
 ---
 
 ## 3.
 
-<!-- Your criterion. -->
-
-
+Every run must produce all three intended labels—human, uncertain, and AI—when tested with labeled examples: at least one example for each label in each of the three runs.
 
 **Why this target:**
-
+The middle label is useful only if it can actually be reached, and the other labels must not be made unreachable by the thresholds. Testing all three labels in every run catches threshold or scoring changes that collapse the system into one or two outcomes.
 
 
 ---
 
 ## 4.
-
-<!-- Your criterion. -->
-
-
+For every valid appeal in a test of 10 submissions, the response must report `under_review` and the audit log must contain exactly one new appeal record with its `content_id`, `reasoning`, and timestamp.
 
 **Why this target:**
-
-
+Writers need confirmation that their appeal was received, and reviewers need a reliable record to investigate it. Recording an appeal does not automatically teach or update the detector; any future model changes should be separately reviewed and tested.
 
 ---
 
 ## 5.
 
-<!-- Your criterion. -->
-
-
+If `text` is missing, empty, or whitespace-only, the endpoint must return HTTP 400 with a JSON error. It must accept text up to 10,000 characters; text longer than that must return HTTP 413 with a JSON error asking the writer to shorten it. The service must remain available after each rejected request.
 
 **Why this target:**
+Writers get a clear, actionable response instead of a confusing server error. A fixed 10,000-character limit makes the boundary testable and protects the service from unexpectedly large requests; accepting a text file is outside this endpoint's contract.
 
 
 

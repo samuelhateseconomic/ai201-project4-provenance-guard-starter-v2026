@@ -1,0 +1,73 @@
+## What happens to a submission
+
+1. **Request:** A client sends JSON to `POST /submit` with `text` and `creator_id`.
+2. **Route (`app.py`):** The service parses and validates the JSON, then assigns the submission a `content_id`.
+3. **Model signal (`detector.py`):** `model_signal(text)` estimates how predictable the text is to a local language model and returns a score from 0 to 1.
+4. **Style signal (`stylometry.py`):** `style_signal(text)` measures text features such as sentence-length variation, vocabulary repetition, and punctuation.
+5. **Combiner (`scoring.py`):** `combine_signals` combines the two scores into one score, also from 0 to 1.
+6. **Label (`scoring.py`):** `score_to_label` maps that score to a `guess` and reader-facing label.
+7. **Audit and response (`audit.py`, then `app.py`):** The service appends the decision and scores to the audit log, then returns the result as JSON.
+
+## The two signals
+
+### Signal one — model signal
+
+- **Measures:** How predictable the text is to a local language model. Low perplexity becomes a higher AI-leaning score.
+- **Why it might differ:** Generated text often uses likely next words and familiar phrasing, which can make it more predictable.
+- **What it can’t see:** Predictability does not establish authorship. Plain, conventional human writing—especially writing by someone using familiar vocabulary—can score as AI-like. Unusual or ornate AI writing can score as human-like. The detector also only analyzes up to 400 tokens.
+
+### Signal two — style signal
+
+- **Measures:** The text’s form, not its meaning: sentence-length variation, vocabulary repetition, and punctuation patterns.
+- **Why it might differ:** Generated prose may have more even sentence lengths or more repeated vocabulary; human writing may vary more.
+- **What it can’t see:** It cannot understand the text or determine who wrote it. Editing sentence breaks, adding typos, or inserting quotations can change its measurements without changing authorship. Type-token ratio is also affected by text length.
+
+## Trace the false positive
+
+For a concrete **hypothetical** case, suppose a real writer submits plain, conventional writing. The model score is **0.82**, the style score is **0.52**, and the current equal weights in `config.py` produce a combined score of **0.67**. With the current AI threshold of 0.65, the service would label it AI-like. Those signal values are illustrative; the actual scores depend on the text and the completed style signal.
+
+A reader-facing label could say:
+
+> “This text has patterns often seen in AI-generated writing. That is not proof of how it was written. If you wrote it yourself, you can request a review.”
+
+The writer can send `POST /appeal` with the `content_id` and their reasoning. The service should mark the submission `under_review` and append an appeal record, preserving the original decision. An appeal requests review; it does not automatically change the label.
+
+## Endpoint contracts
+
+These are the two endpoints being built; `/ping` remains the unchanged control route.
+
+### `POST /submit`
+
+**Request JSON**
+
+- `text`: string; required and non-empty
+- `creator_id`: string; required and non-empty
+
+**Successful response JSON**
+
+- `content_id`: string; unique ID for this submission
+- `guess`: `"human"`, `"unsure"`, or `"ai"`
+- `confidence`: number from 0 to 1; the combined AI-leaning score, **not a calibrated probability**
+- `label`: reader-facing explanation
+- `model_score`: number from 0 to 1
+- `style_score`: number from 0 to 1
+
+The audit record should also contain the timestamp, `content_id`, `creator_id`, guess, both signal scores, combined score, label, and status.
+
+### `POST /appeal`
+
+**Request JSON**
+
+- `content_id`: string; required, and must identify an existing submission
+- `reasoning`: string; required and non-empty
+
+**Successful response JSON**
+
+- `ok`: `true`
+- `content_id`: the appealed submission’s ID
+- `status`: `"under_review"`
+- `message`: confirmation that the appeal was recorded
+
+For a clear contract, document the error cases too: invalid submission or appeal JSON returns **400**, and an unknown `content_id` on an appeal returns **404**. The starter currently returns **501** for both endpoints because they are not implemented yet.
+
+The project’s relevant implementation and submission sections are in `app.py`, `detector.py`, `stylometry.py`, `scoring.py`, and `README.md`.
