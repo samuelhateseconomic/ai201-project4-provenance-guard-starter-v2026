@@ -53,35 +53,58 @@
 
 ### Signal one — the model signal
 
-**What it measures:**
+**What it measures:** How predictable the text is to a local language model. Low perplexity becomes a higher AI-leaning score.
 
-**Why that might differ between human and AI writing:**
+**Why that might differ between human and AI writing:** Generated text often uses likely next words and familiar phrasing, which can make it more predictable.
 
-**What it can't see:**
+**What it can't see:** Predictability does not establish authorship. Plain, conventional human writing can be predictable, while unusual AI writing can be surprising.
 
 ### Signal two — the style signal
 
-**What it measures:**
+**What it measures:** Sentence-length variation, repeated vocabulary (1 minus type-token ratio), and punctuation density, without interpreting meaning.
 
-**Why that might differ between human and AI writing:**
+**Why that might differ between human and AI writing:** Generated prose may use more even sentence lengths and repeat a narrower vocabulary. The current score also treats denser punctuation as more AI-like, but that is only a heuristic, not a validated difference.
 
-**What it can't see:**
+**What it can't see:** It cannot understand meaning or identify an author. Editing sentence breaks, adding typos, or inserting quotations can change these measurements without changing authorship; type-token ratio also depends on text length.
+
+**How the style score is calculated:** It equally averages three 0–1 components: `1 / (1 + sentence_length_CV)`, `1 - type_token_ratio`, and `min(punctuation_density / 0.10, 1)`. Sentence-length CV is standard deviation divided by mean word count; with fewer than two sentences its component is neutral (0.5). Punctuation density is Unicode punctuation characters divided by all characters.
 
 ### The combining rule
 
 <!-- Write the rule in words, then give the numbers. What happens when the two
      signals disagree? -->
 
-**The rule:**
+**The rule:** Use a weighted average. When the signals disagree, the combined score stays between them instead of allowing either signal to decide alone; it leans somewhat more toward the model signal.
 
-**The numbers:**
+**The numbers:** `combined = 0.60 × model_score + 0.40 × style_score`. The weights sum to 1, so valid 0–1 inputs produce a 0–1 output.
 
 **Where it lives:** `scoring.py::combine_signals`
 
 <!-- ⚠️ The grader checks your code against that line. If your rule lives
      somewhere else, say where. -->
 
-**A case where my two signals split, and what my rule does with it:**
+**The three original test pieces:** Both signals score the short self-written text and the longer human-written text below 0.5. On the AI-generated piece, they split: the model score is **0.3640**, while the style score is **0.5745**.
+
+| Test piece | Model signal | Style signal | Combined |
+|---|---:|---:|---:|
+| Short self-written | 0.0032 | 0.1667 | 0.06860 |
+| Human-written | 0.3858 | 0.4677 | 0.41856 |
+| AI-generated | 0.3640 | 0.5745 | 0.44820 |
+
+**What my rule does with that split:** It gives the model 60% and style 40%, producing **0.44820** for the AI-generated piece. That moves the result toward the style signal without letting it decide alone. These three samples are too few to establish accuracy or justify retuning the weights.
+
+The AI-generated sample is 15,823 characters, above the route's 10,000-character limit. These three comparisons call the signals directly; `/submit` would reject that oversized sample with HTTP 413.
+
+**Four-input calibration check:** The labels below describe how each paragraph was constructed; they are not independently verified authorship labels. Scores came from the local GPT-2 model and `stylometry.style_signal`.
+
+| Calibration input | Model signal | Style signal | Combined |
+|---|---:|---:|---:|
+| Clearly AI-style | 0.7682 | 0.4098 | 0.62484 |
+| Human-style anecdote | 0.6593 | 0.4198 | 0.56350 |
+| Formal human-style | 0.3981 | 0.3490 | 0.37846 |
+| Lightly edited AI-style | 0.6153 | 0.3925 | 0.52618 |
+
+**What surprised me:** The style scores are close together, so these three simple features did not separate the four examples well. The model also gave the human-style anecdote a relatively high score (0.6593). These small examples are a diagnostic check, not proof that either signal can identify authorship.
 
 
 
@@ -128,12 +151,13 @@ $submitBody | curl.exe -sS -X POST http://127.0.0.1:5000/submit -H "Content-Type
 
 ```json
 {
+  "combined_score": 0.23994000000000001,
   "confidence": 0.0,
-  "content_id": "88cee5c2-6124-4fd0-910c-75aadf090d8e",
+  "content_id": "2c432a65-68bf-439b-9c94-09fb027a4831",
   "guess": "pending",
   "label": "Classification is not implemented yet.",
   "model_score": 0.1319,
-  "style_score": null
+  "style_score": 0.402
 }
 ```
 
@@ -159,15 +183,15 @@ curl.exe -sS "http://127.0.0.1:5000/log?limit=3"
   "count": 1,
   "entries": [
     {
-      "combined_score": null,
-      "content_id": "88cee5c2-6124-4fd0-910c-75aadf090d8e",
+      "combined_score": 0.23994000000000001,
+      "content_id": "2c432a65-68bf-439b-9c94-09fb027a4831",
       "creator_id": "readme-sample",
       "guess": "pending",
       "label": "Classification is not implemented yet.",
       "model_score": 0.1319,
       "status": "decided",
-      "style_score": null,
-      "timestamp": "2026-11-02T23:52:39+00:00"
+      "style_score": 0.402,
+      "timestamp": "2026-11-03T01:28:37+00:00"
     }
   ]
 }

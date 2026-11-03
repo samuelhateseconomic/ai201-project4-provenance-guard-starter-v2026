@@ -24,7 +24,7 @@
 
 ## Trace the false positive
 
-For a concrete **hypothetical** case, suppose a real writer submits plain, conventional writing. The model score is **0.82**, the style score is **0.52**, and the current equal weights in `config.py` produce a combined score of **0.67**. With the current AI threshold of 0.65, the service would label it AI-like. Those signal values are illustrative; the actual scores depend on the text and the completed style signal.
+For a concrete **hypothetical** case, suppose a real writer submits plain, conventional writing. The model score is **0.82**, the style score is **0.52**, and the current 60/40 weights in `config.py` produce a combined score of **0.70**. With the current AI threshold of 0.65, the service would label it AI-like. Those signal values are illustrative; the actual scores depend on the text, and neither signal establishes authorship.
 
 A reader-facing label could say:
 
