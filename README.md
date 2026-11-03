@@ -165,7 +165,7 @@ These are examples showing that all three route branches can be reached, not evi
      diagnostics. -->
 
 ```powershell
-$submitBody = '{"text":"People have a day. People have a day. People have a day. People have a day. People have a day. People have a day. People have a day. People have a day.","creator_id":"label-ai"}'
+$submitBody = '{"text":"People have a day. People have a day. People have a day. People have a day. People have a day. People have a day. People have a day. People have a day.","creator_id":"readme-sample"}'
 $submitBody | curl.exe -sS -X POST http://127.0.0.1:5000/submit -H "Content-Type: application/json" --data-binary "@-"
 ```
 
@@ -173,7 +173,7 @@ $submitBody | curl.exe -sS -X POST http://127.0.0.1:5000/submit -H "Content-Type
 {
   "combined_score": 0.91356,
   "confidence": 0.0,
-  "content_id": "428c0712-aacb-4fb1-81bd-76fee653e533",
+  "content_id": "a31e8a2a-2edc-4ea1-b144-1789dbe1b239",
   "guess": "ai",
   "label": "This text has features often associated with AI writing, but this result is not proof of who wrote it. You can appeal if you think we got it wrong.",
   "model_score": 0.9882,
@@ -184,13 +184,13 @@ $submitBody | curl.exe -sS -X POST http://127.0.0.1:5000/submit -H "Content-Type
 **An appeal**
 
 ```powershell
-$appealBody = '{"content_id":"428c0712-aacb-4fb1-81bd-76fee653e533","reasoning":"I wrote this text myself and would like the decision reviewed."}'
+$appealBody = '{"content_id":"a31e8a2a-2edc-4ea1-b144-1789dbe1b239","reasoning":"I wrote this text myself and would like the decision reviewed."}'
 $appealBody | curl.exe -sS -X POST http://127.0.0.1:5000/appeal -H "Content-Type: application/json" --data-binary "@-"
 ```
 
 ```json
 {
-  "content_id": "428c0712-aacb-4fb1-81bd-76fee653e533",
+  "content_id": "a31e8a2a-2edc-4ea1-b144-1789dbe1b239",
   "message": "Your appeal has been recorded for review.",
   "ok": true,
   "status": "under_review"
@@ -200,7 +200,7 @@ $appealBody | curl.exe -sS -X POST http://127.0.0.1:5000/appeal -H "Content-Type
 **What the log shows afterwards**
 
 ```powershell
-curl.exe -sS "http://127.0.0.1:5000/log?limit=3"
+curl.exe -sS "http://127.0.0.1:5000/log?limit=2"
 ```
 
 ```json
@@ -209,22 +209,22 @@ curl.exe -sS "http://127.0.0.1:5000/log?limit=3"
   "entries": [
     {
       "combined_score": 0.91356,
-      "content_id": "428c0712-aacb-4fb1-81bd-76fee653e533",
-      "creator_id": "label-ai",
+      "content_id": "a31e8a2a-2edc-4ea1-b144-1789dbe1b239",
+      "creator_id": "readme-sample",
       "guess": "ai",
       "label": "This text has features often associated with AI writing, but this result is not proof of who wrote it. You can appeal if you think we got it wrong.",
       "model_score": 0.9882,
       "status": "decided",
       "style_score": 0.8016,
-      "timestamp": "2026-11-03T02:03:14+00:00"
+      "timestamp": "2026-11-03T02:07:32+00:00"
     },
     {
-      "content_id": "428c0712-aacb-4fb1-81bd-76fee653e533",
-      "creator_id": "label-ai",
+      "content_id": "a31e8a2a-2edc-4ea1-b144-1789dbe1b239",
+      "creator_id": "readme-sample",
       "event": "appeal",
       "reasoning": "I wrote this text myself and would like the decision reviewed.",
       "status": "under_review",
-      "timestamp": "2026-11-03T02:03:14+00:00"
+      "timestamp": "2026-11-03T02:07:32+00:00"
     }
   ]
 }
