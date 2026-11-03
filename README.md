@@ -121,22 +121,27 @@
      two off the response, so leaving them out costs you next unit's
      diagnostics. -->
 
-```bash
-$ curl -X POST http://127.0.0.1:5000/submit \
-  -H "Content-Type: application/json" \
-  -d '{"text": "...", "creator_id": "..."}'
+```powershell
+$submitBody = '{"text":"The project service accepts a writer submission and returns a score. A reviewer can inspect the audit record later. This example is for checking the route and log, not for judging authorship.","creator_id":"readme-sample"}'
+$submitBody | curl.exe -sS -X POST http://127.0.0.1:5000/submit -H "Content-Type: application/json" --data-binary "@-"
 ```
 
 ```json
-
+{
+  "confidence": 0.0,
+  "content_id": "88cee5c2-6124-4fd0-910c-75aadf090d8e",
+  "guess": "pending",
+  "label": "Classification is not implemented yet.",
+  "model_score": 0.1319,
+  "style_score": null
+}
 ```
 
 **An appeal**
 
-```bash
-$ curl -X POST http://127.0.0.1:5000/appeal \
-  -H "Content-Type: application/json" \
-  -d '{"content_id": "...", "reasoning": "..."}'
+```powershell
+$appealBody = '{"content_id":"...","reasoning":"..."}'
+$appealBody | curl.exe -sS -X POST http://127.0.0.1:5000/appeal -H "Content-Type: application/json" --data-binary "@-"
 ```
 
 ```json
@@ -145,12 +150,27 @@ $ curl -X POST http://127.0.0.1:5000/appeal \
 
 **What the log shows afterwards**
 
-```bash
-$ curl "http://127.0.0.1:5000/log?limit=3"
+```powershell
+curl.exe -sS "http://127.0.0.1:5000/log?limit=3"
 ```
 
 ```json
-
+{
+  "count": 1,
+  "entries": [
+    {
+      "combined_score": null,
+      "content_id": "88cee5c2-6124-4fd0-910c-75aadf090d8e",
+      "creator_id": "readme-sample",
+      "guess": "pending",
+      "label": "Classification is not implemented yet.",
+      "model_score": 0.1319,
+      "status": "decided",
+      "style_score": null,
+      "timestamp": "2026-11-02T23:52:39+00:00"
+    }
+  ]
+}
 ```
 
 ---

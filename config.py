@@ -20,6 +20,7 @@ ROOT = Path(__file__).parent
 # is how you get it; the default keeps your local `curl` commands unchanged.
 HOST = os.getenv("HOST", "127.0.0.1")
 PORT = int(os.getenv("PORT", "5000"))
+MAX_SUBMISSION_CHARS = 10_000
 
 # Flask's debug mode gives anyone who can reach the service an interactive
 # Python prompt inside your process. Fine on loopback, a gift to strangers
