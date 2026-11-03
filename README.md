@@ -39,7 +39,13 @@
 <!-- The path a submission takes, from arriving to the label a reader sees.
      Six or seven steps — this is the trace you wrote in Milestone 1. -->
 
-
+1. A writer sends `POST /submit` with a JSON object containing `text` and `creator_id`.
+2. The route checks that the JSON and both fields are valid, rejects blank text, and returns an error for text over 10,000 characters.
+3. `detector.model_signal` runs the text through the local language model and produces the model signal.
+4. `stylometry.style_signal` measures sentence-length variation, vocabulary repetition, and punctuation density to produce the style signal.
+5. `scoring.combine_signals` combines the two 0–1 scores using 60% model signal and 40% style signal.
+6. `scoring.score_to_label` maps the combined score to a human, unsure, or AI guess and the full sentence shown to the reader.
+7. The route creates a `content_id`, records the decision and both signal scores in `logs/audit.jsonl`, and returns the ID, scores, guess, confidence, and label as JSON.
 
 ---
 
@@ -82,6 +88,8 @@
 
 <!-- ⚠️ The grader checks your code against that line. If your rule lives
      somewhere else, say where. -->
+
+**File and function:** `scoring.py::combine_signals`
 
 **The three original test pieces:** Both signals score the short self-written text and the longer human-written text below 0.5. On the AI-generated piece, they split: the model score is **0.3640**, while the style score is **0.5745**.
 
@@ -236,15 +244,15 @@ curl.exe -sS "http://127.0.0.1:5000/log?limit=2"
 
 **Moment 1**
 
-- *What I asked for:*
-- *What came back:*
-- *What I changed:*
+- *What I asked for:* Why my multi-line `curl -X POST` command failed in PowerShell and how to send the same JSON request.
+- *What came back:* The explanation was that PowerShell's `curl` name resolves to `Invoke-WebRequest`, which does not accept curl's `-X`, `-H`, and `-d` flags; PowerShell also uses a backtick rather than a backslash for line continuation.
+- *What I changed:* I switched the project examples to call `curl.exe` explicitly and used PowerShell-compatible quoting and input piping, so the commands exercise the HTTP endpoint instead of the PowerShell alias.
 
 **Moment 2**
 
-- *What I asked for:*
-- *What came back:*
-- *What I changed:*
+- *What I asked for:* How to combine the model and stylometry signals, and how to present the three score outcomes without treating a score as proof of authorship.
+- *What came back:* A weighted average was suggested so both signals contribute when they disagree, along with a middle unsure band and reader-facing wording that makes uncertainty explicit.
+- *What I changed:* I used a 60% model / 40% style weighted average and the 0.35 / 0.65 label cutoffs in the code, then documented the exact formula, ranges, and an unsure message that says the result is not an accusation. I also kept both individual signal scores in the response and audit log so disagreements can be inspected.
 
 <!-- ═══════════════════════ UNIT 8 — THE TEST ═══════════════════════ -->
 
