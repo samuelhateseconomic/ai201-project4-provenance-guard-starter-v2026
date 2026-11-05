@@ -284,43 +284,306 @@ when a script keeps the same creator ID.
 
 ## Attack Run — Before
 
-<!-- Every attack with its outcome and a held-or-broke mark.
-     `run_attacks.py --label before` produces the table. -->
+I ran all 56 rows from [attack_set](./attack_set/) with
+`python run_attacks.py --set attack_set`. The row-by-row results, including the
+combined score and my verdict for each attack, are in
+[attack_run_2026-11-04_1727.md](./results/attack_run_2026-11-04_1727.md).
 
+**Verdicts:** 15 broke, 41 held.
 
+| Family | Broke | Held |
+|---|---:|---:|
+| Evasion | 9 | 1 |
+| False positive | 3 | 5 |
+| Prompt injection | 0 | 6 |
+| Malformed input | 3 | 17 |
+| Same-creator flood | 0 | 12 |
+
+I counted an evasion as broke if AI text received anything other than the AI
+label; an unsure result avoids an accusation, but still lets that text evade
+the detector. For known-human false-positive examples, only an AI label counts
+as broke because unsure is explicitly not an accusation. The three malformed
+inputs labeled AI were also marked broke because they were non-prose or
+nonstandard-script inputs. Prompt-injection attempts were held: they returned
+ordinary decisions and did not alter the route or log structure. The flood
+reached the configured ten-request allowance, then the remaining two requests
+were rate-limited.
 
 **Ten audit log entries from the run**
 
-<!-- Choose entries that show the interesting failures, not the ten easiest. -->
+The complete 56-entry extract is in
+[audit_extract.json](./results/audit_extract.json). These examples show an
+evasion, a correctly detected AI sample, false positives, unusual-input
+decisions, and rejected requests:
 
 ```json
-
+[
+  {
+    "timestamp": "2026-11-05T01:27:10+00:00",
+    "content_id": "9678630e-23f6-4b6a-a40e-904b9889a872",
+    "creator_id": "attacker_EV01",
+    "guess": "human",
+    "model_score": 0.1635,
+    "style_score": 0.3861,
+    "combined_score": 0.25254000000000004,
+    "label": "We think this was probably written by a person.",
+    "status": "decided"
+  },
+  {
+    "timestamp": "2026-11-05T01:27:14+00:00",
+    "content_id": "5f748b81-32af-4282-a93a-e89576a27b3e",
+    "creator_id": "attacker_EV10",
+    "guess": "ai",
+    "model_score": 0.9792,
+    "style_score": 0.484,
+    "combined_score": 0.7811199999999999,
+    "label": "This text has features often associated with AI writing, but this result is not proof of who wrote it. You can appeal if you think we got it wrong.",
+    "status": "decided"
+  },
+  {
+    "timestamp": "2026-11-05T01:27:16+00:00",
+    "content_id": "fda02124-6db2-45fe-988d-8bbf1a5ca0e1",
+    "creator_id": "attacker_FP05",
+    "guess": "ai",
+    "model_score": 0.8005,
+    "style_score": 0.4755,
+    "combined_score": 0.6705,
+    "label": "This text has features often associated with AI writing, but this result is not proof of who wrote it. You can appeal if you think we got it wrong.",
+    "status": "decided"
+  },
+  {
+    "timestamp": "2026-11-05T01:27:17+00:00",
+    "content_id": "21ec5ec4-4316-4fd7-b244-c790144477bb",
+    "creator_id": "attacker_FP07",
+    "guess": "ai",
+    "model_score": 0.8816,
+    "style_score": 0.4629,
+    "combined_score": 0.71412,
+    "label": "This text has features often associated with AI writing, but this result is not proof of who wrote it. You can appeal if you think we got it wrong.",
+    "status": "decided"
+  },
+  {
+    "timestamp": "2026-11-05T01:27:23+00:00",
+    "content_id": "448d51da-bc36-4f5d-9e1c-d83f528efef5",
+    "creator_id": "attacker_MF06",
+    "guess": "ai",
+    "model_score": 0.9969,
+    "style_score": 0.5,
+    "combined_score": 0.7981400000000001,
+    "label": "This text has features often associated with AI writing, but this result is not proof of who wrote it. You can appeal if you think we got it wrong.",
+    "status": "decided"
+  },
+  {
+    "timestamp": "2026-11-05T01:27:23+00:00",
+    "content_id": "c4fea101-da8f-410a-8340-cac9210bf367",
+    "creator_id": "attacker_MF07",
+    "guess": "ai",
+    "model_score": 0.9064,
+    "style_score": 0.5,
+    "combined_score": 0.7438400000000001,
+    "label": "This text has features often associated with AI writing, but this result is not proof of who wrote it. You can appeal if you think we got it wrong.",
+    "status": "decided"
+  },
+  {
+    "timestamp": "2026-11-05T01:27:24+00:00",
+    "content_id": "c4c368cb-643d-4ec7-8bea-d6b5a42a22c4",
+    "creator_id": "attacker_flood",
+    "guess": "human",
+    "model_score": 0.0287,
+    "style_score": 0.2273,
+    "combined_score": 0.10814,
+    "label": "We think this was probably written by a person.",
+    "status": "decided"
+  },
+  {
+    "timestamp": "2026-11-05T01:27:20+00:00",
+    "creator_id": "attacker_MF01",
+    "event": "rejected",
+    "status": "rejected",
+    "reason": "invalid_text",
+    "status_code": 400
+  },
+  {
+    "timestamp": "2026-11-05T01:27:23+00:00",
+    "creator_id": "attacker_MF08",
+    "event": "rejected",
+    "status": "rejected",
+    "reason": "text_too_long",
+    "status_code": 413
+  },
+  {
+    "timestamp": "2026-11-05T01:27:26+00:00",
+    "creator_id": "attacker_flood",
+    "event": "rejected",
+    "status": "rejected",
+    "reason": "rate_limited",
+    "limit": "10 per 1 minute"
+  }
+]
 ```
 
 **The single worst outcome** — the one I'd least want to explain to a writer
 whose work got caught by it:
 
-
+FP07: deliberately repeated human phrasing received the AI label with a
+combined score of 0.71412. The score clears the 0.65 AI threshold, so this is a
+confident false positive rather than an uncertain result.
 
 ---
 
 ## Run Log and Verdicts
 
-<!-- Your five criteria across three trials. `run_eval.py --label before`. -->
-
 | Criterion | Target | Run 1 | Run 2 | Run 3 | Verdict |
 |---|---|---|---|---|---|
-| 1.  |  |  |  |  |  |
-| 2.  |  |  |  |  |  |
-| 3.  |  |  |  |  |  |
-| 4.  |  |  |  |  |  |
-| 5.  |  |  |  |  |  |
+| 1. Attack-set false-positive proxy | 0 of 8 known-human examples labeled AI | 3/8 AI | 3/8 AI | 3/8 AI | MISSED |
+| 2. Human and AI score separation | ≥7/8 human ≤0.35 and ≥8/10 AI ≥0.65 | H 0/8; AI 1/10 | H 0/8; AI 1/10 | H 0/8; AI 1/10 | MISSED |
+| 3. All three labels reachable | 3 of 3 labels | 3/3 | 3/3 | 3/3 | MET |
+| 4. Appeals recorded exactly once | 10 of 10 appeals return under_review and log once | 10/10 | 10/10 | 10/10 | MET |
+| 5. Invalid and boundary text handling | 5 of 5 expected responses and health checks | 5/5 | 5/5 | 5/5 | MET |
 
-**Real output from one trial**, pasted as text, naming the file and function
-that produced it:
+The first-person false-positive criterion is not verified: the attack set has
+eight known-human challenge examples, not my own writing. I used those as an
+explicit proxy; [criteria.md](./criteria.md) records the revision. The separate
+[samples.zip](./samples.zip) includes demo examples, but its `formal_human.json`
+is intentionally empty for a writer to fill in. The full three-trial output is
+in [run_2026-11-04_1748_before.md](./results/run_2026-11-04_1748_before.md),
+produced by `run_eval.py::main`. The JSON below is actual trial-one output
+from that report.
+
+**Criterion 1 — false-positive proxy** (`run_eval.py::main`):
 
 ```json
+{
+  "status": 200,
+  "content_id": "41f43d5e-5e03-4605-be5a-8717ec74573a",
+  "guess": "ai",
+  "confidence": 0.0,
+  "model_score": 0.8005,
+  "style_score": 0.4755,
+  "combined_score": 0.6705,
+  "label": "This text has features often associated with AI writing, but this result is not proof of who wrote it. You can appeal if you think we got it wrong.",
+  "json_error": null,
+  "group": null,
+  "sent": "To configure the service, edit the settings file in the installation d"
+}
+```
 
+**Criterion 2 — score separation** (`run_eval.py::main`):
+
+```json
+{
+  "status": 200,
+  "content_id": "d2c4428a-d03d-4fb7-94d1-ae8c5785fef1",
+  "guess": "human",
+  "confidence": 0.0,
+  "model_score": 0.1635,
+  "style_score": 0.3861,
+  "combined_score": 0.25254000000000004,
+  "label": "We think this was probably written by a person.",
+  "json_error": null,
+  "group": "ai",
+  "sent": "The importance of effective communication in the workplace cannot be o"
+}
+```
+
+**Criterion 3 — label coverage** (`run_eval.py::main`):
+
+```json
+[
+  {
+    "status": 200,
+    "content_id": "ca78bf0c-97f3-41ea-b4b1-efd60e212592",
+    "guess": "human",
+    "confidence": 0.0,
+    "model_score": 0.1635,
+    "style_score": 0.3861,
+    "combined_score": 0.25254000000000004,
+    "label": "We think this was probably written by a person.",
+    "json_error": null,
+    "group": null,
+    "sent": "The importance of effective communication in the workplace cannot be o"
+  },
+  {
+    "status": 200,
+    "content_id": "8d5740e5-d461-48ac-a5d4-52b7019e52df",
+    "guess": "unsure",
+    "confidence": 0.0,
+    "model_score": 0.5943,
+    "style_score": 0.3189,
+    "combined_score": 0.48414,
+    "label": "We can't confidently tell whether this was written by a person or generated by AI. This result is uncertain, not an accusation.",
+    "json_error": null,
+    "group": null,
+    "sent": "The importance of effective communication in the workplace cannot be o"
+  },
+  {
+    "status": 200,
+    "content_id": "32e8f25c-a6e9-416b-af7c-e49c8e861d88",
+    "guess": "ai",
+    "confidence": 0.0,
+    "model_score": 0.9792,
+    "style_score": 0.484,
+    "combined_score": 0.7811199999999999,
+    "label": "This text has features often associated with AI writing, but this result is not proof of who wrote it. You can appeal if you think we got it wrong.",
+    "json_error": null,
+    "group": null,
+    "sent": "The importance of effective communication in the workplace cannot be o"
+  }
+]
+```
+
+**Criterion 4 — appeal and audit record** (`run_eval.py::run_appeals`):
+
+```json
+{
+  "creator_id": "eval_appeal_t1_1",
+  "submission_status": 200,
+  "submission": {
+    "combined_score": 0.5263,
+    "confidence": 0.0,
+    "content_id": "e8a0c8cb-cc03-4e00-8d56-70db07d421f7",
+    "guess": "unsure",
+    "label": "We can't confidently tell whether this was written by a person or generated by AI. This result is uncertain, not an accusation.",
+    "model_score": 0.6175,
+    "style_score": 0.3895
+  },
+  "submission_json_error": null,
+  "content_id": "e8a0c8cb-cc03-4e00-8d56-70db07d421f7",
+  "appeal_status": 200,
+  "appeal": {
+    "content_id": "e8a0c8cb-cc03-4e00-8d56-70db07d421f7",
+    "message": "Your appeal has been recorded for review.",
+    "ok": true,
+    "status": "under_review"
+  },
+  "appeal_json_error": null,
+  "audit_log_status": 200,
+  "audit_log_json_error": null,
+  "audit_appeal_records": 1,
+  "audit_appeal_record": {
+    "content_id": "e8a0c8cb-cc03-4e00-8d56-70db07d421f7",
+    "creator_id": "eval_appeal_t1_1",
+    "event": "appeal",
+    "reasoning": "I wrote this work and request a review.",
+    "status": "under_review",
+    "timestamp": "2026-11-05T01:47:59+00:00"
+  }
+}
+```
+
+**Criterion 5 — bad input and service availability** (`run_eval.py::main`):
+
+```json
+{
+  "status": 400,
+  "response": {
+    "error": "invalid_text",
+    "message": "text must be a non-empty string."
+  },
+  "json_error": null,
+  "health_status": 200,
+  "sent": "(empty text)"
+}
 ```
 
 **Diagnoses**

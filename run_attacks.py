@@ -487,6 +487,7 @@ def main():
             "creator_id": (attack.get("body") if isinstance(attack.get("body"), dict) else {}).get("creator_id"),
             "guess": payload.get("guess"),
             "confidence": payload.get("confidence"),
+            "combined_score": payload.get("combined_score"),
             "model_score": payload.get("model_score"),
             "style_score": payload.get("style_score"),
             "label": payload.get("label"),
@@ -529,12 +530,12 @@ def write_report(rows, args):
         "came back with is in the table — either one will match this run against your",
         "audit log when you go looking for the ten entries to paste.",
         "",
-        "| ID | Family | Targeting | Status | Content ID | Guess | Score | Verdict |",
+        "| ID | Family | Targeting | Status | Content ID | Guess | Combined score | Verdict |",
         "|---|---|---|---|---|---|---|---|",
     ]
 
     for row in rows:
-        score = row["confidence"]
+        score = row["combined_score"]
         score_text = f"{score:.3f}" if isinstance(score, (int, float)) else "—"
         targets = row["targets"].replace("|", "\\|")
         lines.append(

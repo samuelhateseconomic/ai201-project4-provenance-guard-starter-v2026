@@ -49,6 +49,14 @@ On a test set of at least 100 pieces known to be human-written, no more than 1 p
 **Why this target:**
 An AI label can unfairly harm a real writer, so I would rather miss some AI-written text than falsely accuse more than 1 in 100 human writers. The minimum sample size makes the 1% target measurable; I will count only the AI label as a false positive, not the uncertain label.
 
+> **Revised in unit 8:** Use the eight known-human `false_positive` examples
+> in `attack_set/attacks.csv` as a proxy set. No more than 0 of 8 may receive
+> the AI label in each run.
+>
+> **Why revised:** The supplied attack set has eight known-human examples,
+> not 100 pieces of my own writing. This run measures those examples without
+> claiming they are my work; the original personal-writing target remains
+> unverified.
 
 ---
 
@@ -58,6 +66,13 @@ For each of three runs, at least 8 of 10 clearly human-written examples must sco
 **Why this target:**
 The 0–1 score should leave a visible gap between clear examples instead of forcing a confident label when the signals overlap. The 0.35 and 0.65 cutoffs leave a middle band for uncertain cases; requiring 8 of 10 in each class allows some difficult examples without hiding poor separation.
 
+> **Revised in unit 8:** On the supplied proxy set, at least 7 of 8
+> known-human examples must score at or below 0.35, and at least 8 of 10
+> AI-targeted evasion examples must score at or above 0.65 in each run.
+>
+> **Why revised:** The attack set supplies eight known-human examples rather
+> than ten. Seven of eight preserves the original 80% human target without
+> weakening it; the AI target and score cutoffs are unchanged.
 
 ---
 
