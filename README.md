@@ -2885,21 +2885,68 @@ All three trials produced identical measured outputs for each criterion. Submiss
 
 **Diagnoses**
 
-<!-- For each miss AND each broken attack: the stage and the mechanism.
+The evaluation was stable: the scores, labels, and per-criterion counts were
+identical in all three trials. Only generated IDs and appeal timestamps
+changed. This points to repeatable scoring behavior, not run-to-run
+instability.
 
-     Your service has five stages: the route, signal one, signal two, the
-     combining rule, and the label mapping.
+**Criterion misses**
 
-     Not a diagnosis:  "The evasion attacks got through."
-     A diagnosis:      "Four evasion inputs got through. All four had typos
-                        added to AI-generated text. My second signal measures
-                        word variety, and typos raise word variety — so it read
-                        them as more human. My combining rule weights that
-                        signal at 0.6, so it dragged the whole score down."
+- **Criterion 1 — MISSED:** 3 of 8 known-human proxy examples were labeled AI
+  in every run, against a target of 0. The misses were FP05, FP06, and FP07.
+  The original target about my own writing is still unverified because these
+  supplied examples are not mine.
+- **Criterion 2 — MISSED:** The human side scored 0/8 at or below 0.35, and
+  the AI side scored only 1/10 at or above 0.65 in every run, against revised
+  targets of 7/8 and 8/10. Stage: **signal one** is poorly calibrated for these
+  classes: conventional human prose gets high AI scores, while edited/varied
+  AI text often gets low or middle scores. Stage: **combining rule** then
+  averages that weak separation (60% model, 40% style); it cannot recover
+  class separation the signals did not provide.
+- **Criteria 3–5 — MET:** All labels were reachable, all 10 appeal records
+  were correct in each trial, and all five invalid/boundary requests returned
+  the expected JSON status while `/health` stayed available.
 
-     Look for a pattern. Five failures on one signal is one problem, not five. -->
+**Broken attacks (15 total; stage and mechanism)**
 
+- **Evasion, EV01–EV09 (9):** The detector did not label any of these AI-targeted
+  samples AI; EV10 was held. Stage: **signal one** is directly evaded by
+  unusual vocabulary (EV04, model score 0.6114) and by staying below its token
+  window (EV08, 0.2452, then a confident human label). Typos (EV01) and heavy
+  editing (EV05) also make AI text less predictable to the model (EV01 model
+  score 0.1635; EV05 0.3212). Stage: **signal two** measures surface form, not
+  authorship: sentence breaks, quotations, sentence-length extremes, and
+  punctuation padding (EV02, EV03, EV06, EV07) can move its measures without
+  changing who wrote the text. Stages: **signal one and signal two** are both
+  affected by the pasted human opening in EV09. The results were 0.25254
+  (EV01), 0.3438 (EV05), and 0.29208 (EV08), labeled human. EV02, EV03, EV04,
+  EV06, EV07, and EV09 landed between 0.45462 and 0.56528, labeled unsure.
+  Stage: **combining rule** left EV09 at 0.56528 despite its 0.7042 model
+  score because its style score was 0.3569. The label mapping followed the configured
+  thresholds; the problem is that these upstream scores never reached the AI
+  band.
+- **False positives, FP05–FP07 (3):** A person’s technical documentation,
+  formal template, and deliberately repeated phrasing were all labeled AI.
+  Stage: **signal one** assigns these conventional or repetitive human samples
+  high model scores (0.8005, 0.8814, 0.8816). Stage: **signal two** also leans
+  AI-like when sentence lengths are even, vocabulary repeats, or punctuation
+  is dense (0.4755, 0.3741, 0.4629). Stage: **combining rule** averages
+  those signals to 0.6705, 0.67848, and 0.71412, above the 0.65 threshold;
+  **label mapping** therefore emits AI. This same pattern explains criterion
+  1’s 3/8 false positives and why criterion 2’s human score target failed.
+- **Malformed text, MF05–MF07 (3):** The very long single word, emoji-only
+  text, and right-to-left script all received confident AI labels. Stage:
+  **route** accepts any non-empty string as prose instead of identifying
+  unsupported/non-prose input. Stage: **signal one** then produces extreme
+  scores on input outside its useful text domain (0.9976 for the long word,
+  0.9969 for emoji, and 0.9064 for RTL text). For emoji and RTL text, the
+  ASCII-only word tokenizer yields no words and the style signal falls back to
+  0.5. Stage: **combining rule** gives signal one enough weight to push
+  them over the AI threshold (combined scores 0.66524, 0.79814, and 0.74384),
+  so the **label mapping** turns non-prose into an authorship accusation.
 
+No route crash was auto-marked in the attack run. Prompt-injection attempts
+were held; their text did not change the response format or inject log fields.
 
 ---
 
@@ -2926,15 +2973,21 @@ All three trials produced identical measured outputs for each criterion. Submiss
 
 ## What's Still Broken
 
-<!-- For each attack still getting through and each criterion still missed:
-     what you'd do, and why you stopped. -->
-
-
+Criteria 1 and 2 remain missed, and criterion 1's personal-writing target
+remains unverified. I would collect a real set of my own writing and
+recalibrate signal one on human and AI examples before changing thresholds;
+otherwise I could hide the false positives only by letting more AI samples
+through. I would also add deliberate handling for text outside the tokenizer's
+language/length assumptions rather than treating an extreme score as evidence
+of AI authorship. Those are follow-up changes, not fixes validated by this
+before-run.
 
 **The trade I'd make if this ran for real:**
 
-<!-- Two sentences. Fewer wrong accusations means more AI text getting through.
-     Say which way you'd go and WHO PAYS FOR IT. -->
+I would widen the unsure band or require human review before an AI label when
+signals disagree, even if more AI-written text consequently avoids a confident
+label. The site and its detection goal would pay that cost; a real writer should
+not pay for a heuristic false accusation.
 
 
 
