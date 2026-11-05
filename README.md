@@ -254,6 +254,12 @@ curl.exe -sS "http://127.0.0.1:5000/log?limit=2"
 - *What came back:* A weighted average was suggested so both signals contribute when they disagree, along with a middle unsure band and reader-facing wording that makes uncertainty explicit.
 - *What I changed:* I initially used a 60% model / 40% style weighted average and the 0.35 / 0.65 label cutoffs in the code, then documented the exact formula, ranges, and an unsure message that says the result is not an accusation. I also kept both individual signal scores in the response and audit log so disagreements can be inspected. The later reweighting experiment is documented below.
 
+**Moment 3**
+
+- *What I asked for:* Use the evaluation diagnosis to choose one improvement, run the full attack set and all five criteria again, and compare the results.
+- *What came back:* The diagnosis pointed to the model signal pushing known-human examples over the AI threshold, so I tried reducing its weight and increasing the style signal's weight.
+- *What I changed:* I changed the weights from 60% model / 40% style to 40% / 60%, ran the 56-row attack set and three trials for each criterion, and recorded the actual outputs and remaining failures below. The false-positive proxy improved from 3/8 AI labels to 0/8, but the AI evasion results did not improve; I kept that tradeoff in the report rather than claiming the detector was fixed.
+
 <!-- ═══════════════════════ UNIT 8 — THE TEST ═══════════════════════ -->
 
 ---
@@ -5478,20 +5484,83 @@ asks for the actual JSON, not a description of it.
 
 ## What's Still Broken
 
-Criterion 2 remains missed, and criterion 1's personal-writing target remains
-unverified because the eight supplied examples are not my own writing. All
-eight known-human examples are now unsure rather than confidently human, and
-most AI-targeted evasion examples remain unsure or human. Unsupported inputs
-also remain a risk: emoji-only and RTL text still get AI labels because the
-signals are not calibrated for them. The 40%/60% split is a single measured
+The after-run still has **11 broken attacks**:
+
+- **EV01 (typos):** The model score falls to 0.1635, so the combined score is
+  0.29706 and AI text is labeled human. I would test typo- and edit-robust
+  signals against labeled AI and human examples; I stopped because the
+  available set is too small to calibrate a replacement signal responsibly.
+- **EV02 (broken-up sentences):** Sentence segmentation changes the style
+  signal and the score is unsure at 0.42906. I would test sentence-boundary
+  normalization or document-level features; I stopped rather than tune
+  stylometry to this single attack without a broader validation set.
+- **EV03 (pasted quotation):** The model score is 0.6662, but the style score
+  of 0.3704 pulls the combination to unsure at 0.48872. I would distinguish
+  quoted material from the writer's own text and evaluate both parts; I
+  stopped because that needs a new, quote-labeled evaluation set and is beyond
+  the one-weight-change experiment.
+- **EV04 (unusual vocabulary):** The model score is only 0.6114 and the
+  combined score is unsure at 0.47694. I would calibrate for lexical rarity
+  using varied, labeled writing; I stopped because the supplied examples do
+  not establish how rare words affect real human and AI text generally.
+- **EV05 (heavy human editing):** Both signals are low, producing a human-
+  leaning unsure score of 0.3551. I would evaluate edited AI text and use
+  evidence that survives editing rather than surface style alone; I stopped
+  because the current attack set does not provide enough labeled edit stages
+  to validate that change.
+- **EV06 (one very long and one very short sentence):** The style score falls
+  to 0.2775 and the combined result is unsure at 0.39558. I would make
+  sentence-length features less sensitive to extremes and test varied document
+  structures; I stopped to avoid hand-tuning against one example.
+- **EV07 (punctuation padding):** The style score is 0.3446 and the result is
+  unsure at 0.44124. I would normalize or cap punctuation effects and add
+  padding cases to a validation set; I stopped because a special case for this
+  attack could also erase meaningful punctuation in ordinary writing.
+- **EV08 (text below the model token window):** The model score is 0.2452, so
+  the short AI text is labeled human at 0.31552. I would return insufficient
+  evidence or require a longer sample instead of treating a weak short-text
+  score as authorship evidence; I stopped because that changes the submission
+  contract and needs a separately tested minimum-length rule.
+- **EV09 (human opening attached to AI text):** The model score is 0.7042,
+  but the style score pulls the result to unsure at 0.49582. I would score
+  document sections separately so a human opening cannot mask the rest; I
+  stopped because section-level scoring is a larger design change requiring
+  new mixed-origin test cases.
+- **MF06 (emoji-only text):** The route accepts it as prose; the model score
+  is 0.9969 and the style tokenizer falls back to 0.5, yielding an AI label
+  at 0.69876. I would validate for usable language content and reject or mark
+  unsupported text rather than infer authorship; I stopped because the API
+  currently defines no unsupported-text response and this needs its own
+  route-level tests.
+- **MF07 (right-to-left text):** The same ASCII-only style-tokenizer fallback
+  occurs; a model score of 0.9064 yields an AI label at 0.66256. I would add
+  multilingual-aware handling and validate it with labeled RTL samples; I
+  stopped because the available set has no such calibration data, and a
+  threshold change would merely hide the unsupported-language failure.
+
+**Criterion 2 — MISSED:** In all three after trials, 0/8 known-human examples
+scored at or below 0.35 (target 7/8), and only 1/10 AI evasion examples
+scored at or above 0.65 (target 8/10). I would recalibrate or replace the
+signals using a larger, representative labeled set—including writing I
+actually produced—and validate against held-out human, AI, edited, short, and
+multilingual text. I stopped after the one controlled weight change because
+the current proxy set is too small to support further tuning, and moving
+thresholds to force a pass would trade missed AI for false accusations without
+evidence that the classifier improved. Criterion 1's original personal-writing
+target also remains unverified: the eight proxy samples are supplied examples,
+not my own writing.
+
+The reweighting's measurable gain is narrower: FP05–FP07 moved from AI to
+unsure, so false AI labels fell from 3/8 to 0/8, while all eight human examples
+still failed the confident-human cutoff. The 40%/60% weights are one measured
 experiment, not a validated production setting.
 
 **The trade I'd make if this ran for real:**
 
-I would keep an unsure result out of automatic enforcement and send it for
-human review, even though that means more AI-written text avoids a confident
-AI label. A heuristic score is not proof of authorship, and a real writer
-should not bear the cost of a false accusation.
+I would choose fewer false accusations and send unsure cases for human review,
+even though that lets more AI-written work avoid a confident AI label. The
+site pays through missed detections and review effort; real writers should not
+pay for an uncertain heuristic by being wrongly accused.
 
 
 
