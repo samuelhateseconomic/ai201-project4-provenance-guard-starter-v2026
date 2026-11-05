@@ -260,24 +260,24 @@ curl.exe -sS "http://127.0.0.1:5000/log?limit=2"
 
 ## Rate Limiting
 
-**My limits:** ___ per minute, ___ per day
+**My limits:** 10 per minute, 200 per day
 
 **Why those numbers and not others:**
-<!-- Think about two people: a real writer submitting their own work a few
-     times an hour, and a script sending a thousand variations to map your
-     thresholds. Your numbers have to be liveable for the first and hostile to
-     the second. -->
+Ten submissions in a minute leaves room for a writer correcting and resubmitting
+their work, while stopping a burst of variations from quickly mapping the
+thresholds. The daily cap still allows a writer to work across several pieces
+without giving a script an unlimited number of attempts.
 
-**What a caller counts as:** <!-- per address, or per creator_id? They fail
-differently — one script can look like a thousand callers, and one household
-can look like one. -->
+**What a caller counts as:** `creator_id` (falling back to the caller's address
+when it is missing), so changing network addresses does not bypass the limit
+when a script keeps the same creator ID.
 
 **The run of status codes when I pushed past it:**
 
 <!-- python run_attacks.py --flood 15 -->
 
 ```
-
+200 200 200 200 200 200 200 200 200 200 429 429 429 429 429
 ```
 
 ---
