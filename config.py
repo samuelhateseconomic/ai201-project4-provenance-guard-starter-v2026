@@ -49,12 +49,12 @@ DETECTOR_MAX_TOKENS = 400
 
 
 # ─── Scoring (Milestone 4) ───────────────────────────────────────────────────
-# Weighted average: the model signal gets 60% and the style signal gets 40%.
+# Weighted average: the model signal gets 40% and the style signal gets 60%.
 # Disagreement is softened by averaging rather than letting either signal
 # decide alone. These weights are a starting heuristic, not calibrated rates.
 
-WEIGHT_MODEL_SIGNAL = 0.60
-WEIGHT_STYLE_SIGNAL = 0.40
+WEIGHT_MODEL_SIGNAL = 0.40
+WEIGHT_STYLE_SIGNAL = 0.60
 
 
 # ─── Thresholds (Milestone 5) ────────────────────────────────────────────────

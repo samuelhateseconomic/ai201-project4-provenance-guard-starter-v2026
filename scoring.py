@@ -34,7 +34,7 @@ def combine_signals(model_score: float, style_score: float) -> float:
         A float from 0.0 (confidently human) to 1.0 (confidently AI).
 
     The weighted average is documented in the README. A disagreement moves
-    the result toward the 60%-weighted model signal without letting either
+    the result toward the 60%-weighted style signal without letting either
     signal decide alone.
 
     Weights live in config.py and sum to 1.0.
